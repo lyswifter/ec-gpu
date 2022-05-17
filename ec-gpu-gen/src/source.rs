@@ -16,8 +16,8 @@ pub fn gen_source<E: GpuEngine, L: Limb>() -> String {
         common(),
         gen_ec_source::<E, L>(),
         fft("Fr"),
-        multiexp("G1", "Fr"),
-        multiexp("G2", "Fr"),
+        multiexp("Fq", "Fr"),
+        multiexp("Fq2", "Fr"),
     ]
     .join("\n\n")
 }
@@ -30,16 +30,14 @@ pub fn gen_ec_source<E: GpuEngine, L: Limb>() -> String {
         field::<E::Scalar, L>("Fr"),
         field::<E::Fp, L>("Fq"),
         field2("Fq2", "Fq"),
-        ec("Fq", "G1"),
-        ec("Fq2", "G2"),
+        ec("Fq"),
+        ec("Fq2"),
     ]
     .join("\n\n")
 }
 
-fn ec(field: &str, point: &str) -> String {
-    String::from(EC_SRC)
-        .replace("FIELD", field)
-        .replace("POINT", point)
+fn ec(field: &str) -> String {
+    String::from(EC_SRC).replace("FIELD", field)
 }
 
 fn field2(field2: &str, field: &str) -> String {
@@ -52,9 +50,9 @@ fn fft(field: &str) -> String {
     String::from(FFT_SRC).replace("FIELD", field)
 }
 
-fn multiexp(point: &str, exp: &str) -> String {
+fn multiexp(field: &str, exp: &str) -> String {
     String::from(MULTIEXP_SRC)
-        .replace("POINT", point)
+        .replace("FIELD", field)
         .replace("EXPONENT", exp)
 }
 

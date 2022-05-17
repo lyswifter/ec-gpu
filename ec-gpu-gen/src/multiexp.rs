@@ -168,9 +168,9 @@ where
 
             let kernel = program.create_kernel(
                 if TypeId::of::<G>() == TypeId::of::<E::G1Affine>() {
-                    "G1_bellman_multiexp"
+                    "Fq_bellman_multiexp"
                 } else if TypeId::of::<G>() == TypeId::of::<E::G2Affine>() {
-                    "G2_bellman_multiexp"
+                    "Fq2_bellman_multiexp"
                 } else {
                     return Err(EcError::Simple("Only E::G1 and E::G2 are supported!"));
                 },
