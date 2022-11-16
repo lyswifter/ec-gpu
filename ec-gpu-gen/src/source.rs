@@ -751,7 +751,7 @@ mod tests {
     impl ScalarOrPoint {
         pub fn g1projective(&self) -> G1Projective {
             match self {
-                Self::G1Projective(g1projective) => *g1projective,
+                Self::G1Projective(g1) => *g1,
                 _ => panic!("not supported")
             }
         }
@@ -790,9 +790,11 @@ mod tests {
     }
 
     fn test_source() -> SourceBuilder {
-        let test_source = String::from(TEST_SRC).replace("FIELD", &Scalar::name());
+        let test_source = String::from(TEST_SRC).replace("FIELD", &Scalar::name()
+.replace("POINT", &G1Affine::name()));
         SourceBuilder::new()
             .add_field::<Scalar>()
+            .add_multiexp::<G1Affine, Scalar>()
             .append_source(test_source)
     }
 
@@ -821,6 +823,7 @@ mod tests {
             let device = *Device::all().first().expect("Cannot get a default device");
             let opencl_device = device.opencl_device().unwrap();
             let source_32 = test_source().build_32_bit_limbs();
+            println!("vmx: test source: source 32: {}", source_32);
             let program_32 = opencl::Program::from_opencl(opencl_device, &source_32).unwrap();
             let source_64 = test_source().build_64_bit_limbs();
             let program_64 = opencl::Program::from_opencl(opencl_device, &source_64).unwrap();
@@ -843,6 +846,7 @@ mod tests {
             kernel.arg(&buffer).run().unwrap();
 
             program.read_into_buffer(&buffer, &mut cpu_buffer).unwrap();
++println!("vmx: result: {:?}", cpu_buffer[0]);
             Ok(cpu_buffer[0].0.g1projective())
         });
 
@@ -904,7 +908,8 @@ mod tests {
             //let a = <Bls12 as Engine>::G1::random(&mut rng).to_affine())
             //let a = G1Affine::random(&mut rng);
             let a = G1Projective::random(&mut rng).to_affine();
-            let b = G1Projective::random(&mut rng);
+            //let b = G1Projective::random(&mut rng);
+            let b = G1Projective::identity();
             let c = a + b;
 
             assert_eq!(
