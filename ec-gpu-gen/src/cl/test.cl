@@ -29,3 +29,7 @@ KERNEL void test_sqr(FIELD a, GLOBAL FIELD *result) {
 KERNEL void test_double(FIELD a, GLOBAL FIELD *result) {
   *result = FIELD_double(a);
 }
+
+KERNEL void test_add_mixed(POINT_jacobian a, POINT_affine b, GLOBAL POINT_jacobian *result) {
+  *result = POINT_add_mixed(a, b);
+}
