@@ -846,7 +846,7 @@ mod tests {
             kernel.arg(&buffer).run().unwrap();
 
             program.read_into_buffer(&buffer, &mut cpu_buffer).unwrap();
-+println!("vmx: result: {:?}", cpu_buffer[0]);
+println!("vmx: result: {:?}", cpu_buffer[0]);
             Ok(cpu_buffer[0].0.g1projective())
         });
 
