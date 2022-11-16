@@ -907,13 +907,15 @@ println!("vmx: result: {:?}", cpu_buffer[0]);
             //let b = Scalar::random(&mut rng);
             //let a = <Bls12 as Engine>::G1::random(&mut rng).to_affine())
             //let a = G1Affine::random(&mut rng);
-            let a = G1Projective::random(&mut rng).to_affine();
+            let a = G1Projective::random(&mut rng);
             //let b = G1Projective::random(&mut rng);
-            let b = G1Projective::identity();
+            //let b = G1Projective::random(&mut rng).to_affine();
+            let b = G1Projective::identity().to_affine();
             let c = a + b;
 
             assert_eq!(
-               call_kernel("test_add_mixed", &[GpuWrapper(ScalarOrPoint::G1Affine(a)), GpuWrapper(ScalarOrPoint::G1Projective(b))], &[]),
+               //call_kernel("test_add_mixed", &[GpuWrapper(ScalarOrPoint::G1Affine(a)), GpuWrapper(ScalarOrPoint::G1Projective(b))], &[]),
+               call_kernel("test_add_mixed", &[GpuWrapper(ScalarOrPoint::G1Projective(a)), GpuWrapper(ScalarOrPoint::G1Affine(b))], &[]),
                c
             );
         }
