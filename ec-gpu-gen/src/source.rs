@@ -790,8 +790,8 @@ mod tests {
     }
 
     fn test_source() -> SourceBuilder {
-        let test_source = String::from(TEST_SRC).replace("FIELD", &Scalar::name()
-.replace("POINT", &G1Affine::name()));
+        let test_source = String::from(TEST_SRC).replace("FIELD", &Scalar::name())
+.replace("POINT", &G1Affine::name());
         SourceBuilder::new()
             .add_field::<Scalar>()
             .add_multiexp::<G1Affine, Scalar>()
