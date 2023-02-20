@@ -3,3 +3,6 @@ members = [
   "ec-gpu",
   "ec-gpu-gen"
 ]
+
+[patch.crates-io]
+funty = { git = "https://github.com/bitvecto-rs/funty", rev = "7ef0d890fbcd8b3def1635ac1a877fc298488446" }

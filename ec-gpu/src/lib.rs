@@ -1,3 +1,14 @@
+/// Describes how to generate the elliptic curve operations for
+/// - `Scalar`
+/// - `Fp`
+/// - `Fp2`
+/// - `G1`
+/// - `G2`
+pub trait GpuEngine {
+    type Scalar: GpuField;
+    type Fp: GpuField;
+}
+
 /// The name that is used in the GPU source code to identify the item that is used.
 pub trait GpuName {
     /// A unique name for the item.
