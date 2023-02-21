@@ -55,8 +55,3 @@ cuda = ["rust-gpu-tools/cuda"]
 opencl = ["rust-gpu-tools/opencl"]
 fft = []
 multiexp = []
-
-[[bench]]
-name = "multiexp"
-harness = false
-required-features = ["multiexp"]

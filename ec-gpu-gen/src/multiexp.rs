@@ -1,8 +1,7 @@
-use std::any::TypeId;
 use std::ops::AddAssign;
 use std::sync::{Arc, RwLock};
 
-use ec_gpu::GpuEngine;
+use ec_gpu::{GpuEngine, GpuName};
 use ff::PrimeField;
 use group::{prime::PrimeCurveAffine, Group};
 use log::{error, info};
@@ -12,7 +11,6 @@ use yastl::Scope;
 
 use crate::{
     error::{EcError, EcResult},
-    program,
     threadpool::Worker,
 };
 
@@ -103,6 +101,7 @@ where
     /// The `maybe_abort` function is called when it is possible to abort the computation, without
     /// leaving the GPU in a weird state. If that function returns `true`, execution is aborted.
     pub fn create(
+        program: Program,
         device: &Device,
         maybe_abort: Option<&'a (dyn Fn() -> bool + Send + Sync)>,
     ) -> EcResult<Self> {
@@ -111,8 +110,6 @@ where
         let compute_capability = device.compute_capability();
         let work_units = work_units(compute_units, compute_capability);
         let chunk_size = calc_chunk_size::<E>(mem, work_units);
-
-        let program = program::program(device)?;
 
         Ok(SingleMultiexpKernel {
             program,
@@ -135,7 +132,7 @@ where
         n: usize,
     ) -> EcResult<G::Curve>
     where
-        G: PrimeCurveAffine,
+        G: PrimeCurveAffine + GpuName,
     {
         if let Some(maybe_abort) = &self.maybe_abort {
             if maybe_abort() {
@@ -166,17 +163,8 @@ where
             // `LOCAL_WORK_SIZE` sized thread groups.
             let global_work_size = div_ceil(num_windows * num_groups, LOCAL_WORK_SIZE);
 
-            let kernel = program.create_kernel(
-                if TypeId::of::<G>() == TypeId::of::<E::G1Affine>() {
-                    "G1_bellman_multiexp"
-                } else if TypeId::of::<G>() == TypeId::of::<E::G2Affine>() {
-                    "G2_bellman_multiexp"
-                } else {
-                    return Err(EcError::Simple("Only E::G1 and E::G2 are supported!"));
-                },
-                global_work_size,
-                LOCAL_WORK_SIZE,
-            )?;
+            let kernel_name = format!("{}_multiexp", G::name());
+            let kernel = program.create_kernel(&kernel_name, global_work_size, LOCAL_WORK_SIZE)?;
 
             kernel
                 .arg(&base_buffer)
@@ -243,8 +231,8 @@ where
     E: Engine + GpuEngine,
 {
     /// Create new kernels, one for each given device.
-    pub fn create(devices: &[&Device]) -> EcResult<Self> {
-        Self::create_optional_abort(devices, None)
+    pub fn create(programs: Vec<Program>, devices: &[&Device]) -> EcResult<Self> {
+        Self::create_optional_abort(programs, devices, None)
     }
 
     /// Create new kernels, one for each given device, with early abort hook.
@@ -252,25 +240,28 @@ where
     /// The `maybe_abort` function is called when it is possible to abort the computation, without
     /// leaving the GPU in a weird state. If that function returns `true`, execution is aborted.
     pub fn create_with_abort(
+        programs: Vec<Program>,
         devices: &[&Device],
         maybe_abort: &'a (dyn Fn() -> bool + Send + Sync),
     ) -> EcResult<Self> {
-        Self::create_optional_abort(devices, Some(maybe_abort))
+        Self::create_optional_abort(programs, devices, Some(maybe_abort))
     }
 
     fn create_optional_abort(
+        programs: Vec<Program>,
         devices: &[&Device],
         maybe_abort: Option<&'a (dyn Fn() -> bool + Send + Sync)>,
     ) -> EcResult<Self> {
-        let kernels: Vec<_> = devices
-            .iter()
-            .filter_map(|device| {
-                let kernel = SingleMultiexpKernel::<E>::create(device, maybe_abort);
+        let kernels: Vec<_> = programs
+            .into_iter()
+            .zip(devices.iter())
+            .filter_map(|(program, device)| {
+                let device_name = program.device_name().to_string();
+                let kernel = SingleMultiexpKernel::<E>::create(program, device, maybe_abort);
                 if let Err(ref e) = kernel {
                     error!(
                         "Cannot initialize kernel for device '{}'! Error: {}",
-                        device.name(),
-                        e
+                        device_name, e
                     );
                 }
                 kernel.ok()
@@ -304,7 +295,7 @@ where
         results: &'s mut [G::Curve],
         error: Arc<RwLock<EcResult<()>>>,
     ) where
-        G: PrimeCurveAffine<Scalar = E::Fr>,
+        G: PrimeCurveAffine<Scalar = E::Fr> + GpuName,
     {
         let num_devices = self.kernels.len();
         let num_exps = exps.len();
@@ -352,7 +343,7 @@ where
         skip: usize,
     ) -> EcResult<G::Curve>
     where
-        G: PrimeCurveAffine<Scalar = E::Fr>,
+        G: PrimeCurveAffine<Scalar = E::Fr> + GpuName,
     {
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
         // https://github.com/zkcrypto/bellman/blob/10c5010fd9c2ca69442dc9775ea271e286e776d8/src/multiexp.rs#L38

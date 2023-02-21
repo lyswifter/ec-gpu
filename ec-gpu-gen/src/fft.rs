@@ -2,16 +2,15 @@ use std::cmp;
 use std::ops::MulAssign;
 use std::sync::{Arc, RwLock};
 
-use ec_gpu::GpuEngine;
+use ec_gpu::{GpuEngine, GpuName};
 use ff::Field;
 use log::{error, info};
 use pairing::Engine;
-use rust_gpu_tools::{program_closures, Device, LocalBuffer, Program};
+use rust_gpu_tools::{program_closures, LocalBuffer, Program};
 
 use crate::threadpool::THREAD_POOL;
 use crate::{
     error::{EcError, EcResult},
-    program,
 };
 
 const LOG2_MAX_ELEMENTS: usize = 32; // At most 2^32 elements is supported.
@@ -31,17 +30,19 @@ where
     _phantom: std::marker::PhantomData<E::Fr>,
 }
 
-impl<'a, E: Engine + GpuEngine> SingleFftKernel<'a, E> {
+impl<'a, E> SingleFftKernel<'a, E>
+where
+    E: Engine + GpuEngine,
+    E::Fr: GpuName,
+{
     /// Create a new kernel for a device.
     ///
     /// The `maybe_abort` function is called when it is possible to abort the computation, without
     /// leaving the GPU in a weird state. If that function returns `true`, execution is aborted.
     pub fn create(
-        device: &Device,
+        program: Program,
         maybe_abort: Option<&'a (dyn Fn() -> bool + Send + Sync)>,
     ) -> EcResult<Self> {
-        let program = program::program(device)?;
-
         Ok(SingleFftKernel {
             program,
             maybe_abort,
@@ -101,8 +102,9 @@ impl<'a, E: Engine + GpuEngine> SingleFftKernel<'a, E> {
                 let n = 1u32 << log_n;
                 let local_work_size = 1 << cmp::min(deg - 1, MAX_LOG2_LOCAL_WORK_SIZE);
                 let global_work_size = n >> deg;
+                let kernel_name = format!("{}_radix_fft", E::Fr::name());
                 let kernel = program.create_kernel(
-                    "radix_fft",
+                    &kernel_name,
                     global_work_size as usize,
                     local_work_size as usize,
                 )?;
@@ -142,10 +144,11 @@ where
 impl<'a, E> FftKernel<'a, E>
 where
     E: Engine + GpuEngine,
+    E::Fr: GpuName,
 {
     /// Create new kernels, one for each given device.
-    pub fn create(devices: &[&Device]) -> EcResult<Self> {
-        Self::create_optional_abort(devices, None)
+    pub fn create(programs: Vec<Program>) -> EcResult<Self> {
+        Self::create_optional_abort(programs, None)
     }
 
     /// Create new kernels, one for each given device, with early abort hook.
@@ -153,25 +156,25 @@ where
     /// The `maybe_abort` function is called when it is possible to abort the computation, without
     /// leaving the GPU in a weird state. If that function returns `true`, execution is aborted.
     pub fn create_with_abort(
-        devices: &[&Device],
+        programs: Vec<Program>,
         maybe_abort: &'a (dyn Fn() -> bool + Send + Sync),
     ) -> EcResult<Self> {
-        Self::create_optional_abort(devices, Some(maybe_abort))
+        Self::create_optional_abort(programs, Some(maybe_abort))
     }
 
     fn create_optional_abort(
-        devices: &[&Device],
+        programs: Vec<Program>,
         maybe_abort: Option<&'a (dyn Fn() -> bool + Send + Sync)>,
     ) -> EcResult<Self> {
-        let kernels: Vec<_> = devices
-            .iter()
-            .filter_map(|device| {
-                let kernel = SingleFftKernel::<E>::create(device, maybe_abort);
+        let kernels: Vec<_> = programs
+            .into_iter()
+            .filter_map(|program| {
+                let device_name = program.device_name().to_string();
+                let kernel = SingleFftKernel::<E>::create(program, maybe_abort);
                 if let Err(ref e) = kernel {
                     error!(
                         "Cannot initialize kernel for device '{}'! Error: {}",
-                        device.name(),
-                        e
+                        device_name, e
                     );
                 }
                 kernel.ok()
