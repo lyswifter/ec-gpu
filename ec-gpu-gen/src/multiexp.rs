@@ -67,9 +67,14 @@ where
     G: PrimeCurveAffine,
     G::Scalar: PrimeField,
 {
-    let aff_size = std::mem::size_of::<G>();
+    //let aff_size = std::mem::size_of::<G>();
+    //let exp_size = exp_size::<G::Scalar>();
+    //let proj_size = std::mem::size_of::<G::Curve>();
+    // NOTE vmx 2023-02-22: Use the sizes of G1 and G2 combined. No idea why this would be needed,
+    // but let's give it a try.
+    let aff_size = 96 + 192;
     let exp_size = exp_size::<G::Scalar>();
-    let proj_size = std::mem::size_of::<G::Curve>();
+    let proj_size = 144 + 216;
 
     // Leave `MEMORY_PADDING` percent of the memory free.
     let max_memory = ((mem as f64) * (1f64 - MEMORY_PADDING)) as usize;
