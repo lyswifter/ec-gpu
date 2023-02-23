@@ -67,27 +67,41 @@ where
     G: PrimeCurveAffine,
     G::Scalar: PrimeField,
 {
+    log::trace!("vmx: calc_chunk_size: mem: {}", mem);
+    log::trace!("vmx: calc_chunk_size: work_units: {}", work_units);
+
     //let aff_size = std::mem::size_of::<G>();
     //let exp_size = exp_size::<G::Scalar>();
     //let proj_size = std::mem::size_of::<G::Curve>();
     // NOTE vmx 2023-02-22: Use the sizes of G1 and G2 combined. No idea why this would be needed,
     // but let's give it a try.
+
     let aff_size = 96 + 192;
+    log::trace!("vmx: calc_chunk_size: affine size: {:?}", aff_size);
     let exp_size = exp_size::<G::Scalar>();
+    log::trace!("vmx: calc_chunk_size: exp size: {:?}", exp_size);
     let proj_size = 144 + 216;
+    log::trace!("vmx: calc_chunk_size: proj size: {:?}", proj_size);
 
     // Leave `MEMORY_PADDING` percent of the memory free.
     let max_memory = ((mem as f64) * (1f64 - MEMORY_PADDING)) as usize;
+    log::trace!("vmx: calc_chunk_size: max_memory: {}", max_memory);
     // The amount of memory (in bytes) of a single term.
     let term_size = aff_size + exp_size;
+    log::trace!("vmx: calc_chunk_size: term_size: {}", term_size);
     // The number of buckets needed for one work unit
     let max_buckets_per_work_unit = 1 << MAX_WINDOW_SIZE;
+    log::trace!("vmx: calc_chunk_size: max buckets per work unit: {}", max_buckets_per_work_unit);
     // The amount of memory (in bytes) we need for the intermediate steps (buckets).
     let buckets_size = work_units * max_buckets_per_work_unit * proj_size;
+    log::trace!("vmx: calc_chunk_size: buckets_size: {}", buckets_size);
     // The amount of memory (in bytes) we need for the results.
     let results_size = work_units * proj_size;
+    log::trace!("vmx: calc_chunk_size: results_size: {}", results_size);
 
-    (max_memory - buckets_size - results_size) / term_size
+    let result = (max_memory - buckets_size - results_size) / term_size;
+    log::trace!("vmx: calc_chunk_size: result: {}", result);
+    result
 }
 
 /// The size of the exponent in bytes.
@@ -136,6 +150,7 @@ where
         exponents: &[<G::Scalar as PrimeField>::Repr],
     ) -> EcResult<G::Curve> {
         assert_eq!(bases.len(), exponents.len());
+        log::trace!("vmx: multiexp: num terms: {}", bases.len());
 
         if let Some(maybe_abort) = &self.maybe_abort {
             if maybe_abort() {
@@ -143,10 +158,14 @@ where
             }
         }
         let window_size = self.calc_window_size(bases.len());
+        log::trace!("vmx: multiexp: window_size: {}", window_size);
         // windows_size * num_windows needs to be >= 256 in order for the kernel to work correctly.
         let num_windows = div_ceil(256, window_size);
+        log::trace!("vmx: multiexp: num windows: {}", num_windows);
         let num_groups = self.work_units / num_windows;
+        log::trace!("vmx: multiexp: num groups: {}", num_groups);
         let bucket_len = 1 << window_size;
+        log::trace!("vmx: multiexp: bucket len: {}", bucket_len);
 
         // Each group will have `num_windows` threads and as there are `num_groups` groups, there will
         // be `num_groups` * `num_windows` threads in total.
@@ -165,6 +184,7 @@ where
             // The global work size follows CUDA's definition and is the number of
             // `LOCAL_WORK_SIZE` sized thread groups.
             let global_work_size = div_ceil(num_windows * num_groups, LOCAL_WORK_SIZE);
+            log::trace!("vmx: multiexp: global work size: {}", global_work_size);
 
             let kernel_name = format!("{}_multiexp", G::name());
             let kernel = program.create_kernel(&kernel_name, global_work_size, LOCAL_WORK_SIZE)?;
@@ -300,8 +320,10 @@ where
     ) {
         let num_devices = self.kernels.len();
         let num_exps = exps.len();
+        log::trace!("vmx: parallel_multiexp: number terms: {}", num_exps);
         // The maximum number of exponentiations per device.
         let chunk_size = ((num_exps as f64) / (num_devices as f64)).ceil() as usize;
+        log::trace!("vmx: parallel_multiexp: chunk size per device: {}", chunk_size);
 
         for (((bases, exps), kern), result) in bases
             .chunks(chunk_size)
@@ -316,6 +338,7 @@ where
             scope.execute(move || {
                 let mut acc = G::Curve::identity();
                 for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
+                    log::trace!("vmx: parallel_multiexp: number terms per device: {}", bases.len());
                     if error.read().unwrap().is_err() {
                         break;
                     }
