@@ -35,29 +35,27 @@ where
 #[test]
 fn gpu_multiexp_consistency() {
     fil_logger::maybe_init();
-    const MAX_LOG_D: usize = 16;
-    const START_LOG_D: usize = 10;
     let devices = Device::all();
     let programs = devices
         .iter()
         .map(|device| crate::program!(device))
         .collect::<Result<_, _>>()
         .expect("Cannot create programs!");
-    let mut kern = MultiexpKernel::<<Bls12 as Engine>::G1Affine>::create(programs, &devices)
+    let mut kern = MultiexpKernel::<<Bls12 as Engine>::G2Affine>::create(programs, &devices)
         .expect("Cannot initialize kernel!");
     let pool = Worker::new();
 
     let mut rng = rand::thread_rng();
 
-    let mut bases = (0..(1 << START_LOG_D))
-        .map(|_| <Bls12 as Engine>::G1::random(&mut rng).to_affine())
-        .collect::<Vec<_>>();
-
-    for log_d in START_LOG_D..=MAX_LOG_D {
-        let g = Arc::new(bases.clone());
-
-        let samples = 1 << log_d;
+    //for log_d in [1, 328, 33386943, 130637542, 131076643, 134217727] {
+    for samples in [1, 328] {
         println!("Testing Multiexp for {} elements...", samples);
+        let g = Arc::new(
+            (0..samples)
+                //.map(|_| <Bls12 as Engine>::G1::random(&mut rng).to_affine())
+                .map(|_| <Bls12 as Engine>::G2::random(&mut rng).to_affine())
+                .collect::<Vec<_>>(),
+        );
 
         let v = Arc::new(
             (0..samples)
@@ -82,7 +80,5 @@ fn gpu_multiexp_consistency() {
         assert_eq!(cpu, gpu);
 
         println!("============================");
-
-        bases = [bases.clone(), bases.clone()].concat();
     }
 }
