@@ -41,7 +41,7 @@ fn gpu_multiexp_consistency() {
         .map(|device| crate::program!(device))
         .collect::<Result<_, _>>()
         .expect("Cannot create programs!");
-    let mut kern = MultiexpKernel::<<Bls12 as Engine>::G2Affine>::create(programs, &devices)
+    let mut kern = MultiexpKernel::<<Bls12 as Engine>::G1Affine>::create(programs, &devices)
         .expect("Cannot initialize kernel!");
     let pool = Worker::new();
 
@@ -52,8 +52,7 @@ fn gpu_multiexp_consistency() {
         println!("Testing Multiexp for {} elements...", samples);
         let g = Arc::new(
             (0..samples)
-                //.map(|_| <Bls12 as Engine>::G1::random(&mut rng).to_affine())
-                .map(|_| <Bls12 as Engine>::G2::random(&mut rng).to_affine())
+                .map(|_| <Bls12 as Engine>::G1::random(&mut rng).to_affine())
                 .collect::<Vec<_>>(),
         );
 
