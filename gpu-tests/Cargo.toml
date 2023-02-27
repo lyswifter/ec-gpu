@@ -28,7 +28,7 @@ blstrs = { version = "0.6.0", features = ["__private_bench"] }
 ec-gpu-gen = { path = "../ec-gpu-gen" }
 
 [features]
-default = ["cuda", "opencl"]
+default = ["opencl"]
 cuda = ["blstrs/gpu", "ec-gpu-gen/cuda"]
 opencl = ["blstrs/gpu", "ec-gpu-gen/opencl"]
 
