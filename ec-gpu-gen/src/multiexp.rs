@@ -37,7 +37,7 @@ const fn div_ceil(a: usize, b: usize) -> usize {
 /// it's faster to use two times the number of work units.
 const fn work_units(compute_units: u32, compute_capabilities: Option<(u32, u32)>) -> usize {
     match compute_capabilities {
-        Some((AMPERE, _)) => LOCAL_WORK_SIZE * compute_units as usize * 2,
+        //Some((AMPERE, _)) => LOCAL_WORK_SIZE * compute_units as usize * 2,
         _ => LOCAL_WORK_SIZE * compute_units as usize,
     }
 }
