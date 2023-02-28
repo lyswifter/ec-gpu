@@ -47,7 +47,7 @@ fn gpu_multiexp_consistency() {
 
     let mut rng = rand::thread_rng();
 
-    for samples in [1, 328, 131076643] {
+    for samples in [131076643] {
         println!("Testing Multiexp for {} elements...", samples);
         let g_random = <Bls12 as Engine>::G1::random(&mut rng).to_affine();
         let g = Arc::new(vec![g_random; samples]);

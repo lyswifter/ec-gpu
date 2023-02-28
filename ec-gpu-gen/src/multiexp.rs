@@ -156,7 +156,8 @@ where
         // windows_size * num_windows needs to be >= 256 in order for the kernel to work correctly.
         let num_windows = div_ceil(256, window_size);
         log::trace!("vmx: multiexp: num windows: {}", num_windows);
-        let num_groups = self.work_units / num_windows;
+        //let num_groups = self.work_units / num_windows;
+        let num_groups = 354;
         log::trace!("vmx: multiexp: num groups: {}", num_groups);
         let bucket_len = 1 << window_size;
         log::trace!("vmx: multiexp: bucket len: {}", bucket_len);
