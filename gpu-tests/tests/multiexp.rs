@@ -49,17 +49,11 @@ fn gpu_multiexp_consistency() {
 
     for samples in [1, 328, 131076643] {
         println!("Testing Multiexp for {} elements...", samples);
-        let g = Arc::new(
-            (0..samples)
-                .map(|_| <Bls12 as Engine>::G1::random(&mut rng).to_affine())
-                .collect::<Vec<_>>(),
-        );
+        let g_random = <Bls12 as Engine>::G1::random(&mut rng).to_affine();
+        let g = Arc::new(vec![g_random; samples]);
 
-        let v = Arc::new(
-            (0..samples)
-                .map(|_| <Bls12 as Engine>::Fr::random(&mut rng).to_repr())
-                .collect::<Vec<_>>(),
-        );
+        let v_random = <Bls12 as Engine>::Fr::random(&mut rng).to_repr();
+        let v = Arc::new(vec![v_random; samples]);
 
         let mut now = Instant::now();
         let gpu = multiexp_gpu(&pool, (g.clone(), 0), FullDensity, v.clone(), &mut kern).unwrap();
