@@ -58,6 +58,17 @@ fn gpu_multiexp_consistency() {
         let gpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
         println!("GPU took {}ms.", gpu_dur);
 
+        let result_fixed = blstrs::G1Projective::from_uncompressed(&[
+            16, 223, 43, 198, 141, 83, 114, 254, 199, 111, 184, 184, 17, 144, 191, 52, 235, 206,
+            97, 113, 34, 144, 203, 77, 60, 61, 34, 141, 74, 164, 42, 0, 213, 114, 216, 222, 133,
+            210, 144, 107, 174, 42, 246, 191, 150, 247, 233, 168, 7, 115, 255, 199, 213, 203, 136,
+            98, 120, 81, 240, 38, 198, 45, 172, 243, 200, 145, 55, 239, 134, 48, 211, 57, 119, 84,
+            42, 148, 41, 9, 120, 114, 102, 174, 79, 252, 100, 165, 4, 86, 188, 96, 255, 177, 7,
+            123, 38, 114,
+        ])
+        .unwrap();
+        assert_eq!(gpu, result_fixed);
+
         now = Instant::now();
         let cpu = multiexp_cpu(&pool, (g.clone(), 0), FullDensity, v.clone())
             .wait()
