@@ -302,6 +302,8 @@ where
         //                    (a) + b +
         //                    ((a) + b) + c
         let mut running_sum = G::Curve::identity();
+        use group::Curve;
+        log::trace!("vmx: buckets: {:?}", buckets.iter().map(|bucket| bucket.to_affine()).collect::<Vec<_>>());
         for exp in buckets.into_iter().rev() {
             running_sum.add_assign(&exp);
             acc.add_assign(&running_sum);
@@ -343,11 +345,12 @@ where
     G: PrimeCurveAffine,
     S: SourceBuilder<G>,
 {
-    let c = if exponents.len() < 32 {
-        3u32
-    } else {
-        (f64::from(exponents.len() as u32)).ln().ceil() as u32
-    };
+    //let c = if exponents.len() < 32 {
+    //    3u32
+    //} else {
+    //    (f64::from(exponents.len() as u32)).ln().ceil() as u32
+    //};
+    let c = 10;
 
     if let Some(query_size) = density_map.as_ref().get_query_size() {
         // If the density map has a known query size, it should not be
