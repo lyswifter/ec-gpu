@@ -303,11 +303,12 @@ where
         //                    ((a) + b) + c
         let mut running_sum = G::Curve::identity();
         use group::Curve;
-        log::trace!("vmx: buckets: {:?}", buckets.iter().map(|bucket| bucket.to_affine()).collect::<Vec<_>>());
+        //log::trace!("vmx: buckets: {:?}", buckets.iter().map(|bucket| bucket.to_affine()).collect::<Vec<_>>());
         for exp in buckets.into_iter().rev() {
             running_sum.add_assign(&exp);
             acc.add_assign(&running_sum);
         }
+        log::trace!("vmx: bucket result for {}: {:?}", skip, acc.to_affine());
 
         Ok(acc)
     };
