@@ -264,6 +264,7 @@ where
 
         // Create space for the buckets
         let mut buckets = vec![<G as PrimeCurveAffine>::Curve::identity(); (1 << c) - 1];
+        log::trace!("vmx: multiexp_cpu: multiexp_inner: c, num buckets: {} {}", c, buckets.len());
 
         let zero = G::Scalar::zero().to_repr();
         let one = G::Scalar::one().to_repr();
