@@ -157,7 +157,8 @@ where
         let num_windows = div_ceil(256, window_size);
         log::trace!("vmx: multiexp: num windows: {}", num_windows);
         //let num_groups = self.work_units / num_windows;
-        let num_groups = 354;
+        //let num_groups = 354;
+        let num_groups = 1;
         log::trace!("vmx: multiexp: num groups: {}", num_groups);
         let bucket_len = (1 << window_size) - 1;
         log::trace!("vmx: multiexp: bucket len: {}", bucket_len);
@@ -197,6 +198,11 @@ where
 
             let mut results = vec![G::Curve::identity(); self.work_units];
             program.read_into_buffer(&result_buffer, &mut results)?;
+
+            let mut buckets = vec![G::Curve::identity(); self.work_units * bucket_len];
+            program.read_into_buffer(&bucket_buffer, &mut buckets)?;
+            use group::Curve;
+            log::trace!("vmx: multiexp: buckets: {:?}", buckets.iter().map(|bucket| bucket.to_affine()).collect::<Vec<_>>());
 
             Ok(results)
         });
