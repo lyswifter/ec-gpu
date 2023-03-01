@@ -84,7 +84,7 @@ where
     let term_size = aff_size + exp_size;
     log::trace!("vmx: calc_chunk_size: term_size: {}", term_size);
     // The number of buckets needed for one work unit
-    let max_buckets_per_work_unit = 1 << MAX_WINDOW_SIZE;
+    let max_buckets_per_work_unit = (1 << MAX_WINDOW_SIZE) - 1;
     log::trace!("vmx: calc_chunk_size: max buckets per work unit: {}", max_buckets_per_work_unit);
     // The amount of memory (in bytes) we need for the intermediate steps (buckets).
     let buckets_size = work_units * max_buckets_per_work_unit * proj_size;
@@ -159,7 +159,7 @@ where
         //let num_groups = self.work_units / num_windows;
         let num_groups = 354;
         log::trace!("vmx: multiexp: num groups: {}", num_groups);
-        let bucket_len = 1 << window_size;
+        let bucket_len = (1 << window_size) - 1;
         log::trace!("vmx: multiexp: bucket len: {}", bucket_len);
 
         // Each group will have `num_windows` threads and as there are `num_groups` groups, there will
