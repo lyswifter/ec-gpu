@@ -45,15 +45,13 @@ fn gpu_multiexp_consistency() {
         .expect("Cannot initialize kernel!");
     let pool = Worker::new();
 
-    let mut rng = rand::thread_rng();
-
     for samples in [131076643] {
         println!("Testing Multiexp for {} elements...", samples);
-        let g_random = <Bls12 as Engine>::G1::random(&mut rng).to_affine();
-        let g = Arc::new(vec![g_random; samples]);
+        let g_fixed = <Bls12 as Engine>::G1::generator().to_affine();
+        let g = Arc::new(vec![g_fixed; samples]);
 
-        let v_random = <Bls12 as Engine>::Fr::random(&mut rng).to_repr();
-        let v = Arc::new(vec![v_random; samples]);
+        let v_fixed = <Bls12 as Engine>::Fr::one().to_repr();
+        let v = Arc::new(vec![v_fixed; samples]);
 
         let mut now = Instant::now();
         let gpu = multiexp_gpu(&pool, (g.clone(), 0), FullDensity, v.clone(), &mut kern).unwrap();
