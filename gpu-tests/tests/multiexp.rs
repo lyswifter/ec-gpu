@@ -79,6 +79,7 @@ fn gpu_multiexp_consistency() {
         println!("Speedup: x{}", cpu_dur as f32 / gpu_dur as f32);
 
         assert_eq!(cpu, gpu);
+        assert_eq!(cpu, result_fixed);
 
         println!("============================");
     }
