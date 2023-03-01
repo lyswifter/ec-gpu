@@ -57,6 +57,7 @@ fn gpu_multiexp_consistency() {
         let gpu = multiexp_gpu(&pool, (g.clone(), 0), FullDensity, v.clone(), &mut kern).unwrap();
         let gpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
         println!("GPU took {}ms.", gpu_dur);
+        println!("vmx: gpu result: {:?}", gpu.to_affine());
 
         let result_fixed = blstrs::G1Projective::from_uncompressed(&[
             16, 223, 43, 198, 141, 83, 114, 254, 199, 111, 184, 184, 17, 144, 191, 52, 235, 206,
@@ -67,7 +68,8 @@ fn gpu_multiexp_consistency() {
             123, 38, 114,
         ])
         .unwrap();
-        assert_eq!(gpu, result_fixed);
+        println!("vmx: fixed result: {:?}", result_fixed.to_affine());
+        //assert_eq!(gpu, result_fixed);
 
         now = Instant::now();
         let cpu = multiexp_cpu(&pool, (g.clone(), 0), FullDensity, v.clone())
@@ -75,11 +77,11 @@ fn gpu_multiexp_consistency() {
             .unwrap();
         let cpu_dur = now.elapsed().as_secs() * 1000 + now.elapsed().subsec_millis() as u64;
         println!("CPU took {}ms.", cpu_dur);
+        assert_eq!(cpu, result_fixed);
 
         println!("Speedup: x{}", cpu_dur as f32 / gpu_dur as f32);
 
         assert_eq!(cpu, gpu);
-        assert_eq!(cpu, result_fixed);
 
         println!("============================");
     }
