@@ -5,3 +5,6 @@ members = [
   "gpu-tests",
 ]
 resolver = "2"
+
+[patch.crates-io]
+blstrs = { git = "https://github.com/huitseeker/blstrs", branch = "WIP-0.13" }
